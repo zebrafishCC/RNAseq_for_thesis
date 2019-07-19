@@ -1,0 +1,37 @@
+#downsample Bamfile, use 011-1 as sample
+#bamfile was created in previous step
+#creat a bash file downsample.sh
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o01.bam STRATEGY=Chained P=0.01 ACCURACY=0.0001
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o02.bam STRATEGY=Chained P=0.02 ACCURACY=0.0001
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o03.bam STRATEGY=Chained P=0.03 ACCURACY=0.0001
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o04.bam STRATEGY=Chained P=0.04 ACCURACY=0.0001
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o05.bam STRATEGY=Chained P=0.05 ACCURACY=0.0001
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o06.bam STRATEGY=Chained P=0.06 ACCURACY=0.0001
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o07.bam STRATEGY=Chained P=0.07 ACCURACY=0.0001
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o08.bam  P=0.08 
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o09.bam  P=0.09 
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o10.bam  P=0.10 
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o12.bam  P=0.12
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o14.bam  P=0.14
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o16.bam  P=0.16
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o18.bam  P=0.18
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o20.bam  P=0.20
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o25.bam  P=0.25
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o30.bam  P=0.30
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o35.bam  P=0.35
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o40.bam  P=0.40
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o45.bam  P=0.45
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o50.bam  P=0.50
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o60.bam  P=0.60
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o70.bam  P=0.70
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o80.bam  P=0.80
+picard DownsampleSam I=011-1_S4Aligned.sortedByCoord.out.bam O=o90.bam  P=0.90
+
+#use featurecount to get gene counts
+featureCounts -T 6 -p -t gene -g gene_id -a zv11_ensembl.gtf -o saturation011.txt *.bam
+
+#use bash and excel to explore saturation_curve_plot
+#$i filter gene number with read counts
+awk '{for(i=7;i<=NF;i++) if($i>5) number[i]+=1} END {for(i=8;i<=NF;i++) print number[i]} END {print number[7]} ' saturation011.txt
+
+#use R to plot final saturation_curve_plot
