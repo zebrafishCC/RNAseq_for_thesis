@@ -35,3 +35,7 @@ featureCounts -T 6 -p -t gene -g gene_id -a zv11_ensembl.gtf -o saturation011.tx
 awk '{for(i=7;i<=NF;i++) if($i>5) number[i]+=1} END {for(i=8;i<=NF;i++) print number[i]} END {print number[7]} ' saturation011.txt
 
 #use R to plot final saturation_curve_plot
+setwd("/home/chengchen/data/RNAseq/bamfiles/saturation_curve")
+data = read.csv("saturation_plot.csv")
+library(ggplot2)
+ggplot(data=data, aes(x=M_reads,y=gene_number))+geom_line()+geom_point(aes(x=M_reads,y=gene_number,colour="red"))+theme(legend.position="none")+ggtitle("011-1 sample saturation curve")+theme(plot.title=element_text(hjust=0.5))
