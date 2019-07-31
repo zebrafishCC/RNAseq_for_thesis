@@ -1,0 +1,102 @@
+#open files containing drug injection count files
+setwd("/home/chengchen/data/RNAseq/rp_featurecount/")
+dir()
+#open summarize count file, count file was obtatined from htseq-count with data integrataion
+count = read.csv("31samplescountmatrix.txt",sep = "\t", header = TRUE, row.names = 1)
+head(count)
+count = count[,c(1,2,3,4,5,12,13,14,21,22,23,24,25)]
+#open coldata containing sample information
+colnames = colnames(count)
+sampleCondition = c(rep("011inject",3),rep("011Rpm",2),rep("536inject",3),rep("Ctl",3),rep("ctRpm",2))
+coldata = data.frame(samples=colnames,condition=sampleCondition)
+
+#make sure rowname of coldata is consistent with colnames of count data
+rownames(coldata)
+colnames(count)
+#colnames(count)=rownames(coldata)
+rownames(coldata)=colnames(count)
+head(count)
+all(rownames(coldata)==colnames(count))
+
+#import data for further DESeq2 analyis
+library("DESeq2")
+ddsMatrix = DESeqDataSetFromMatrix(countData = count,colData = coldata,design=~condition)
+head(coldata)
+ddsMatrix$condition =  relevel(ddsMatrix$condition,ref = "Ctl")
+
+#vsd normalization for PCA analysis
+dds=ddsMatrix[rowSums(counts(ddsMatrix))>=1,]
+vsd = vst(dds,blind = FALSE)
+pdf("total13_sample_clustering.pdf")
+plotPCA(vsd) #PCAplot to find sample clustering
+dev.off()
+
+#sample distances
+sampleDists = dist(t(assay(vsd)))
+library("pheatmap")
+library("RColorBrewer")
+sampleDistMatrix <- as.matrix( sampleDists )
+colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+pdf("13_sample_distances.pdf")
+pheatmap(sampleDistMatrix,
+         clustering_distance_rows = sampleDists,
+         clustering_distance_cols = sampleDists,
+         col = colors)
+dev.off()
+
+
+count = read.csv("31samplescountmatrix.txt",sep = "\t", header = TRUE, row.names = 1)
+head(count)
+count = count[,c(1,2,3,4,5,12,13,21,22,23,24,25)]
+#open coldata containing sample information
+colnames = colnames(count)
+sampleCondition = c(rep("011inject",3),rep("011Rpm",2),rep("536inject",2),rep("Ctl",3),rep("ctRpm",2))
+coldata = data.frame(samples=colnames,condition=sampleCondition)
+
+#make sure rowname of coldata is consistent with colnames of count data
+rownames(coldata)
+colnames(count)
+#colnames(count)=rownames(coldata)
+rownames(coldata)=colnames(count)
+head(count)
+all(rownames(coldata)==colnames(count))
+
+#import data for further DESeq2 analyis
+library("DESeq2")
+ddsMatrix = DESeqDataSetFromMatrix(countData = count,colData = coldata,design=~condition)
+head(coldata)
+ddsMatrix$condition =  relevel(ddsMatrix$condition,ref = "Ctl")
+
+#vsd normalization for PCA analysis
+dds=ddsMatrix[rowSums(counts(ddsMatrix))>=1,]
+vsd = vst(dds,blind = FALSE)
+pdf("total12_sample_clustering.pdf")
+plotPCA(vsd) #PCAplot to find sample clustering
+dev.off()
+
+
+
+
+
+
+
+#gene clustering
+library("genefilter")
+library("pheatmap")
+topVarGenes = head(order(rowVars(assay(vsd)),decreasing = TRUE),20)
+selected = assay(vsd)[topVarGenes,]
+selected = selected - rowMeans(selected)
+
+#change rownames for selected dataset
+#library("biomaRt")
+#ensembl=useMart("ensembl")
+#ensembl=useDataset("drerio_gene_ensembl",mart=ensembl)
+#ids=rownames(selected)
+#symbols <- getBM(attributes=c('ensembl_gene_id','zfin_id_symbol'),filters='ensembl_gene_id',values=ids, mart=ensembl)
+#symbols=symbols[rownames(selected),]
+#rownames(selected) = symbols$zfin_id_symbol
+
+anno = as.data.frame(colData(vsd))
+pdf("rps14_top20vsd_heatmap.pdf")
+pheatmap(selected,annotation_col = anno)
+dev.off()
