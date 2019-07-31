@@ -1,0 +1,52 @@
+#use ggplot2 to plot kegg pathway analysis and GO process
+
+rm(list=ls())
+library(ggplot2) 
+library(Cairo) 
+library(stringr)
+library(ggsci)
+
+setwd("/home/chengchen/data/RNAseq/rp_featurecount/DAVID_analysis/")
+
+theme_set(theme_bw(base_size=40))
+#rps14_up_selected
+pathway = read.table("rps14mutant_up_kegg_select.tsv",header=T,sep="\t") 
+pathway$Term<-str_split_fixed(pathway$Term,":",2)[,2] 
+pathway$Term = as.character(pathway$Term)
+pathway$Term = factor(pathway$Term, levels=unique(pathway$Term))
+tiff_path="/home/chengchen/data/RNAseq/rp_featurecount/DAVID_analysis/rps14mutant_select_upKEGG.tiff" 
+CairoTIFF(tiff_path, width = 7, height = 3.5, units='in', dpi=600)
+ggplot(pathway,aes(x=Fold.Enrichment,y=Term))+ 
+  geom_point(aes(size=Count,color=-1*log10(PValue)))+ 
+  scale_color_gsea()+ 
+  labs(color=expression(-log[10](P.value)), size="Gene number")+
+  xlab("fold_enrichment")+ggtitle("Up-regulated genes: KEGG pathway")+theme(plot.title = element_text(face = "bold"))+
+  theme_bw()+theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank(),panel.background = element_blank())+
+  theme(axis.text.y = element_text(color = "black"), axis.title.x = element_text(color = "black"),axis.title.y = element_blank())
+dev.off()
+
+
+
+
+setwd("/home/chengchen/data/RNAseq/rp_featurecount/GO_panther_analysis/")
+
+#set font size and font family
+
+theme_set(theme_bw(base_size=40,base_family='Times New Roman')+
+            theme(panel.grid.major = element_blank(), 
+                  panel.grid.minor = element_blank()))
+
+#011 GO up regulation
+bioprocess = read.table("011inject_up_GOanalysis_select.txt",header=T,sep="\t")
+bioprocess$Term<-str_split_fixed(bioprocess$Term," \\(GO",2)[,1] 
+bioprocess$Term = as.character(bioprocess$Term)
+bioprocess$Term = factor(bioprocess$Term, levels=unique(bioprocess$Term))
+tiff_path="/home/chengchen/data/RNAseq/rp_featurecount/GO_panther_analysis/011inject_up_bp.tiff" 
+CairoTIFF(tiff_path, width = 7, height = 3.5, units='in', dpi=600)
+ggplot(bioprocess,aes(x=Term,y=fold_enrichment,fill=classification)) + 
+  geom_bar(stat="identity")+labs(color="classification")+scale_fill_npg()+
+  xlab("fold enrichment")+ggtitle("Up-regualted genes: GO biological process")+theme(plot.title = element_text(face="bold"))+
+  theme_bw()+
+  theme(axis.title.y = element_blank(),axis.text.y = element_text(colour = "black"))+
+  coord_flip()+guides(fill = guide_legend(reverse=TRUE))
+dev.off()
