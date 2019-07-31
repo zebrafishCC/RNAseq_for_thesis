@@ -1,0 +1,98 @@
+#volcano plot to give an overview of differentially expressed genes
+library(ggplot2)
+library(Cairo)
+library("biomaRt")
+library("DESeq2")
+library(dplyr)
+library(ggsci)
+
+if (FALSE)
+{
+setwd("/home/chengchen/data/RNAseq/rp_featurecount")
+
+#prepare dataset for rps14 volcano plot
+count = read.csv("31samplescountmatrix.txt",sep = "\t", header = TRUE, row.names = 1)
+count = count[,c(21,22,23,24,25)]
+colnames = colnames(count)
+#sampleCondition = c(rep("011inject",3),rep("011Rpm",2),rep("51Sfm",2),
+#                   rep("51Sfs",2),"51Sfm","51Sfs",rep("536inject",3),rep("5Sfm",2),
+#                    rep("5Sfs",2),"5Sfm","5Sfs",rep("Ctl",3),rep("ctRpm",2),
+#                    "Sfm","Sfs","Sfm","Sfs","Sfm","Sfs")
+sampleCondition = c(rep("Ctl",3),rep("ctRpm",2))
+coldata = data.frame(samples=colnames,condition=sampleCondition)
+#colnames(count)=rownames(coldata)
+rownames(coldata)=colnames(count)
+
+ddsMatrix = DESeqDataSetFromMatrix(countData = count,colData = coldata,design=~condition)
+#head(coldata)
+ddsMatrix$condition =  relevel(ddsMatrix$condition,ref = "Ctl")
+dds=ddsMatrix[rowSums(counts(ddsMatrix))>=10,]
+dds=DESeq(dds)
+
+res0 = results(dds,contrast = c("condition","ctRpm","Ctl")) 
+res05 = res0[!is.na(res0$padj),] 
+ids = rownames(res05)
+###get zfin_gene_symbol for ensembl genes
+
+ensembl=useMart("ensembl")
+ensembl=useDataset("drerio_gene_ensembl",mart=ensembl)
+symbols <- getBM(attributes=c('ensembl_gene_id','entrezgene_id','zfin_id_symbol', 'wikigene_description','name_1006'),filters='ensembl_gene_id',values=ids, mart=ensembl)
+#entrezgene is ENTREZID
+symbols=symbols[!duplicated(symbols$ensembl_gene_id),]
+res05 = as.data.frame(res05)
+res05$ensembl_gene_id = rownames(res05)
+res05 = merge(res05,symbols, by="ensembl_gene_id")
+#res05_lfc=res05_lfc[,-7] #remove ensembl_gene_id column
+res05_ordered = res05[order(res05$padj),]
+#res05ordered_lfc$symbol = mapIds(org.Dr.eg.db,keys = row.names(res05ordered_lfc),column = "SYMBOL",keytype = "ENSEMBL", multiVals="first")
+#data for VennDiagram analysis
+write.csv(res05_ordered,file="rps14mutant_vs_CtlDEG_nonselect.csv") 
+}
+setwd("/home/chengchen/data/RNAseq/rp_featurecount/")
+theme_set(theme_bw(base_size=40))
+
+#rps14 mutant volcano plot
+data = read.csv("rps14mutant_vs_CtlDEG_nonselect.csv")
+ggplot(data, aes(x=log2FoldChange,y=padj))+geom_point()
+data$log10padj=-log10(data$padj)
+data1 = filter(data, abs(log2FoldChange)>1 & log10padj>-log10(0.05))#significant
+data2 = filter(data, !(abs(log2FoldChange)>1 & log10padj>-log10(0.05))) #nonsignificant
+tiff_path="/home/chengchen/data/RNAseq/rp_featurecount/rps14mutant_volcano_plot.tiff" 
+CairoTIFF(tiff_path, width = 10, height = 7, units='in', dpi=600)
+ggplot(data, aes(x=log2FoldChange,y=log10padj))+
+  geom_point(data=data1,color= "red",alpha=0.3,position = position_jitter())+
+  geom_point(data = data2, color="black",alpha=0.3,position=position_jitter())+
+  coord_cartesian(ylim = c(0,40))+
+  theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank(),panel.background = element_blank())+
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed")+
+  geom_vline(xintercept = c(-1, 1), linetype = "dashed")+
+  ylab(expression("-log10[padj]"))+xlab(expression("log2[FoldChange]"))
+dev.off()
+
+#rps14mutant piechart
+data1up = filter(data1, log2FoldChange > 1)
+data1down = filter(data1, log2FoldChange < -1)
+num_up = nrow(data1up)
+num_down = nrow(data1down)
+unsig = nrow(data2)
+total = num_up+num_down+unsig
+percent_up = num_up/total
+percent_down = num_down/total
+percent_unsig = unsig/total
+#pos_up = percent_up/2
+#pos_down = percent_up+percent_down/2
+#pos_unsig = percent_down+percent_down+percent_unsig/2
+df = data.frame(value = c(num_up,num_down,unsig),percent=c(percent_up,percent_down,percent_unsig),label=c("Upregualted genes","Downregulated genes","Nonsignificantly changed genes"))
+#add label position
+#df = df %>% arrange(desc(value)) %>% mutate(labpos = cumsum(percent)-0.5*percent)
+tiff_path="/home/chengchen/data/RNAseq/rp_featurecount/rps14mutant_piechart.tiff" 
+CairoTIFF(tiff_path, width = 10, height = 7, units='in', dpi=600)
+#mycolor = c("#0073C2FF", "#EFC000FF", "#868686FF")
+ggplot(df, aes(x=2,y=percent,fill=label))+
+  geom_col(color="white")+coord_polar("y",start=0)+
+  geom_text(aes(label=value),position = position_stack(vjust = 0.5))+
+  #scale_fill_manual(values = mycolor)+
+  scale_fill_npg()+
+  theme(legend.title=element_blank())+
+  theme_void()+xlim(0.5,2.5)
+dev.off()
