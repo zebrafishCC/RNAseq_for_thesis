@@ -1,0 +1,82 @@
+library("ggplot2")
+setwd("/home/chengchen/Documents")
+
+#rps9 transcript data analysis
+###############
+dir()
+data = read.csv("zebrafish_rps9_fold_change _primer_plate.csv")
+head(data)
+#change the order of factors in data to make sibling data appear first
+data$strain = c("Sibling","Mutant","Sibling","Mutant")
+data$strain = factor(data$strain,levels = c("Sibling","Mutant"))
+#x.seq = c(1,2,4,5)
+#myplot=ggplot(data,aes(fill=strain,x=time,y=fold_change))+
+#   geom_bar(width=0.4,position=position_dodge(width = 0.5),stat = "identity")+
+#   geom_errorbar(aes(ymin=fold_change+neg_err_bar,ymax=fold_change+pos_err_bar),width=.2,position = position_dodge(0.5))+
+#   xlab("")+scale_fill_manual("legend",values = c("black","gray"))+theme_classic()+
+#  theme(legend.title = element_blank(),legend.position = c(0.9,0.9),legend.text = element_text(size = 14))+
+#   theme(axis.text= element_text(size = 12,colour = "black"),axis.title.y=element_text(size = 14),axis.ticks.x = element_blank())+scale_y_continuous(expand=c(0,0),name="Relative fold induction",limits=c(0, 1.5),breaks = c(0.25,0.50,0.75,1.00,1.25,1.50))+
+ #  theme(text = element_text(family = 'Times', color = "black"))
+   #+scale_x_discrete(breaks=NA)
+
+myplot=ggplot(data,aes(fill=strain,x=time,y=fold_change))+
+  geom_bar(width=0.6,position=position_dodge(width = 0.7),stat = "identity")+
+  geom_errorbar(aes(ymin=fold_change+neg_err_bar,ymax=fold_change+pos_err_bar),width=.1,size=0.9,position = position_dodge(0.7))+
+  xlab("")+scale_fill_manual("legend",values = c("black","gray"))+theme_classic()+
+  theme(legend.title = element_blank(),legend.position = c(0.85,0.9),legend.text = element_text(size = 30))+
+  theme(axis.text.x = element_text(size = 30,colour = "black"),axis.text.y = element_text(size = 24, colour = "black"),axis.title.y=element_text(size = 30),axis.ticks.x = element_blank())+scale_y_continuous(expand=c(0,0),name="Relative fold induction",limits=c(0, 1.6),breaks = c(0,0.2,0.4,0.6,0.8,1.0,1.2,1.6))+
+  theme(text = element_text(family = 'Times', color = "black"),axis.line = element_line(colour = 'black', size = 1),axis.ticks = element_line(colour = "black", size = 1),axis.ticks.length = unit(5,"pt"))+
+  theme(plot.margin=unit(c(14, 14,14, 14), "points"))
+
+   #geom_text(aes(x=c(sum(x.seq[1:2])/2, sum(x.seq[3:4])/2), y=0,label=c("24_hpf","48_hpf")), vjust=1.2, size=8)
+ggsave(filename = "rps9_transcripts.pdf",plot = myplot,width = 7, height = 7)
+####
+# t test for rps9 sibling and mutant
+#z24hpf_sib = c(8.703333333,7.413333333,7.766666667)
+#z24hpf_mut = c(8.206666667,7,7.14)
+#z48hpf_sib = c(8.956666667,9.193333333,8.313333333)
+#z48hpf_mut = c(8.266666667,8.371666667,7.39)
+#t.test(z48hpf_sib,z48hpf_mut) #significant
+#t.test(z24hpf_sib,z24hpf_mut) #significant
+
+
+###p53 gene pathway analysis
+data1 = read.csv("p53_pathway_qpcr_plot.csv")
+myplot1=ggplot(data1,aes(fill=time,y=fold_change,x=gene))+
+  geom_bar(position=position_dodge(),stat = "identity")+
+  geom_errorbar(aes(ymin=fold_change+neg_err_bar,ymax=fold_change+pos_err_bar),width=.2,position = position_dodge(0.9))+
+  xlab("")+ylab("Relative fold induction")+scale_fill_manual("legend",values = c('black',"gray"))+
+  theme_classic()+theme(legend.title = element_blank(),legend.position = c(0.8,0.8),legend.text = element_text(size = 14))+
+  theme(axis.text.x = element_text(angle = 45,hjust = 1,face = "italic",size = 14,color = "black"),axis.text.y = element_text(size = 12, colour = "black"),axis.title.y=element_text(size = 14),axis.ticks.x = element_blank())+
+  scale_y_continuous(expand = c(0, 0), limits = c(0,35), breaks = c(0,5,10,15,20,25,30,35))+theme(text = element_text(family = 'Times', color = "black"))
+
+ggsave(filename = "p53_pathway.pdf",plot = myplot1,width = 7,height = 7)
+
+
+###p53 MO injection for p53 pathway analysis
+data2 = read.csv("p53_MO_qpcr_plot.csv")
+myplot2=ggplot(data2,aes(fill=strain,x=gene,y=fold_change))+
+  geom_bar(width=0.4,position=position_dodge(width = 0.5),stat = "identity")+
+  geom_errorbar(aes(ymin=fold_change+neg_err_bar,ymax=fold_change+pos_err_bar),width=.2,position = position_dodge(0.5))+
+  xlab("")+scale_fill_manual("legend",values = c("black","gray"))+theme_classic()+
+  theme(legend.title = element_blank(),legend.position = c(0.9,0.9),legend.text = element_text(size = 14))+
+  scale_y_continuous(expand=c(0,0),name="Relative fold induction (mutant vs mutant+p53-MO)",limits=c(0, 1.5),breaks = c(0.25,0.50,0.75,1.00,1.25,1.50))+
+  theme(text = element_text(family = 'Times', color = "black"))+theme(axis.text.x = element_text(angle = 45,hjust = 1,face = "italic",size = 14,color = "black"),axis.ticks.x = element_blank())+
+  theme(axis.text.y= element_text(size = 12,color = "black"),axis.title.y=element_text(size = 14))
+#+scale_x_discrete(breaks=NA)
+ggsave(filename = "p53MO_p53_pathway.pdf",plot = myplot2,width = 7,height = 7)
+
+
+#paired t test for rps9 mutant plus p53 MO and mutant
+mutp53mo = c(5.216666667,4.95,4.933333333)
+mutp53 = c(3.386666667,3.395,4.501666667)
+
+mutmdm2mo = c(6.116666667,5.91,5.846666667)
+mutmdm2 = c(4.053333333,4.088333333,4.675)
+
+mutp21mo = c(8.12,7.71,7.686666667)
+mutp21 = c(5.906666667,6.738333333,7.131666667)
+t.test(mutp53mo,mutp53,paired = TRUE) 
+t.test(mutmdm2mo,mutmdm2,paired = TRUE) #significant
+t.test(mutp21mo,mutp21,paired = TRUE) 
+
